@@ -9,6 +9,8 @@ type Appointment = {
   status: string;
   bookingSource: string;
   checkedInAt: string | null;
+  weight: number | null;
+  bloodPressure: string | null;
   patient: { name: string; phone: string };
 };
 
@@ -31,6 +33,19 @@ export default function ReceptionPage() {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [registering, setRegistering] = useState(false);
+
+  // الوزن وضغط الدم اللي التمريض بتدخلهم لكل مريضة قبل ما تدخل عند الدكتور
+  const [vitalsInput, setVitalsInput] = useState<Record<string, { weight: string; bp: string }>>(
+    {}
+  );
+  const [savingVitalsId, setSavingVitalsId] = useState<string | null>(null);
+
+  function updateVitalsInput(id: string, field: "weight" | "bp", value: string) {
+    setVitalsInput((prev) => ({
+      ...prev,
+      [id]: { weight: prev[id]?.weight ?? "", bp: prev[id]?.bp ?? "", [field]: value },
+    }));
+  }
 
   async function fetchAppointments() {
     const today = new Date().toISOString();
@@ -56,9 +71,29 @@ export default function ReceptionPage() {
 
   async function checkIn(id: string) {
     setLoading(true);
-    await fetch(`/api/appointments/${id}/checkin`, { method: "PATCH" });
+    const v = vitalsInput[id];
+    await fetch(`/api/appointments/${id}/checkin`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weight: v?.weight, bloodPressure: v?.bp }),
+    });
     await fetchAppointments();
     setLoading(false);
+  }
+
+  async function saveVitals(id: string) {
+    setSavingVitalsId(id);
+    try {
+      const v = vitalsInput[id];
+      await fetch(`/api/appointments/${id}/vitals`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weight: v?.weight, bloodPressure: v?.bp }),
+      });
+      await fetchAppointments();
+    } finally {
+      setSavingVitalsId(null);
+    }
   }
 
   async function reportDelay() {
@@ -222,6 +257,8 @@ export default function ReceptionPage() {
             <th className="p-3 font-display font-semibold">الاسم</th>
             <th className="p-3 font-display font-semibold">المصدر</th>
             <th className="p-3 font-display font-semibold">الحالة</th>
+            <th className="p-3 font-display font-semibold">الوزن (كجم)</th>
+            <th className="p-3 font-display font-semibold">ضغط الدم</th>
             <th className="p-3 font-display font-semibold">إجراء</th>
           </tr>
         </thead>
@@ -233,7 +270,26 @@ export default function ReceptionPage() {
               <td className="p-3">{a.bookingSource === "ONLINE" ? "أونلاين" : "حضوري"}</td>
               <td className="p-3">{a.status}</td>
               <td className="p-3">
-                {!a.checkedInAt && (
+                <input
+                  type="number"
+                  step="0.1"
+                  value={vitalsInput[a.id]?.weight ?? (a.weight != null ? String(a.weight) : "")}
+                  onChange={(e) => updateVitalsInput(a.id, "weight", e.target.value)}
+                  placeholder="مثال: 68"
+                  className="w-20 rounded-lg border border-rose-400/30 p-1 text-center focus:border-wine-500 focus:outline-none"
+                />
+              </td>
+              <td className="p-3">
+                <input
+                  value={vitalsInput[a.id]?.bp ?? a.bloodPressure ?? ""}
+                  onChange={(e) => updateVitalsInput(a.id, "bp", e.target.value)}
+                  placeholder="مثال: 120/80"
+                  dir="ltr"
+                  className="w-24 rounded-lg border border-rose-400/30 p-1 text-center focus:border-wine-500 focus:outline-none"
+                />
+              </td>
+              <td className="p-3">
+                {!a.checkedInAt ? (
                   <button
                     disabled={loading}
                     onClick={() => checkIn(a.id)}
@@ -241,14 +297,24 @@ export default function ReceptionPage() {
                   >
                     تسجيل حضور
                   </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sage-500">✓ حاضرة</span>
+                    <button
+                      onClick={() => saveVitals(a.id)}
+                      disabled={savingVitalsId === a.id}
+                      className="rounded-full border border-rose-400/30 px-2 py-0.5 text-xs text-wine-600 transition hover:bg-blush-100 disabled:opacity-50"
+                    >
+                      {savingVitalsId === a.id ? "جاري الحفظ..." : "حفظ"}
+                    </button>
+                  </div>
                 )}
-                {a.checkedInAt && <span className="text-sage-500">✓ حاضرة</span>}
               </td>
             </tr>
           ))}
           {appointments.length === 0 && (
             <tr>
-              <td colSpan={5} className="p-6 text-center text-plum-900/40">
+              <td colSpan={7} className="p-6 text-center text-plum-900/40">
                 لا يوجد حجوزات اليوم
               </td>
             </tr>
