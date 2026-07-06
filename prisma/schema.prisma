@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========== المستخدمين والأدوار ==========
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique
+  name         String
+  role         Role     @default(PATIENT)
+  passwordHash String?  // للموظفين فقط (ريسبشن/دكتور/أدمن) - المريضة معندهاش باسورد
+  createdAt    DateTime @default(now())
+
+  patientProfile PatientProfile?
+  appointments   Appointment[]
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  RECEPTION
+  ADMIN
+}
+
+// ========== الملف الطبي للمريضة ==========
+model PatientProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id])
+  dateOfBirth       DateTime?
+  bloodType         String?
+  chronicConditions String?
+  allergies         String?
+  isPregnant        Boolean   @default(false)
+  lastPeriodDate    DateTime?
+  privacyMode       Boolean   @default(false)
+
+  // ========== التاريخ المرضي الموسّع ==========
+  occupation         String?  // وظيفة المريضة
+  currentMedications String?  // الأدوية الحالية
+  previousSurgeries  String?  // العمليات الجراحية السابقة
+  obstetricHistory   String?  // تاريخ حالات الحمل والولادة السابقة (عدد الحمل/الولادة/الإجهاض)
+  familyHistory      String?  // تاريخ الأمراض في العائلة
+  husbandName        String?  // اسم الزوج
+  husbandOccupation  String?  // وظيفة الزوج
+
+  visits      Visit[]
+  attachments MedicalAttachment[]
+}
+
+model Visit {
+  id              String       @id @default(cuid())
+  patientId       String
+  patient         PatientProfile @relation(fields: [patientId], references: [id])
+  appointmentId   String?      @unique
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id])
+  visitDate       DateTime     @default(now())
+  visitType       VisitType
+  diagnosis       String?
+  prescription    String?
+  ultrasoundNotes String?
+  labResults      String?
+  nextVisitDate   DateTime?
+  doctorNotes     String?
+  createdAt       DateTime     @default(now())
+}
+
+enum VisitType {
+  CHECKUP
+  ANTENATAL_FOLLOWUP
+  ULTRASOUND
+  EMERGENCY
+  DELIVERY
+  POSTNATAL
+}
+
+model MedicalAttachment {
+  id         String         @id @default(cuid())
+  patientId  String
+  patient    PatientProfile @relation(fields: [patientId], references: [id])
+  fileUrl    String
+  fileType   String
+  uploadedAt DateTime       @default(now())
+}
+
+// ========== الحجوزات والطابور ==========
+model Appointment {
+  id              String            @id @default(cuid())
+  patientUserId   String
+  patient         User              @relation(fields: [patientUserId], references: [id])
+  bookingSource   BookingSource
+  status          AppointmentStatus @default(WAITING)
+  priority        Priority          @default(NORMAL)
+  queueNumber     Int
+  estimatedTime   DateTime?
+  checkedInAt     DateTime?
+  bloodPressure   String?   // بتتسجل وقت تسجيل الحضور من الريسبشن
+  weight          Float?    // بالكيلوجرام - بتتسجل وقت تسجيل الحضور من الريسبشن
+  calledAt        DateTime?
+  completedAt     DateTime?
+  scheduledDate   DateTime
+  notifiedAt3Left DateTime?
+  createdAt       DateTime          @default(now())
+
+  visit Visit?
+
+  @@index([scheduledDate, status])
+}
+
+enum BookingSource {
+  ONLINE
+  WALK_IN
+}
+
+enum AppointmentStatus {
+  WAITING
+  CALLED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum Priority {
+  EMERGENCY
+  FOLLOWUP_URGENT
+  NORMAL
+}
+
+// ========== أحداث العيادة ==========
+model ClinicEvent {
+  id           String    @id @default(cuid())
+  type         EventType
+  delayMinutes Int?
+  note         String?
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+}
+
+enum EventType {
+  DOCTOR_DELAY
+  EMERGENCY_CASE
+  BREAK
+  CLINIC_CLOSED
+  CLINIC_REOPENED
+}
+
+// ========== حالة الدكتور الحالية (سطر واحد يتحدث باستمرار) ==========
+model DoctorStatus {
+  id        String           @id @default("singleton")
+  status    DoctorStatusType @default(AVAILABLE)
+  note      String?
+  updatedAt DateTime         @updatedAt
+}
+
+enum DoctorStatusType {
+  AVAILABLE
+  UNAVAILABLE
+  IN_SURGERY
+  EMERGENCY
+}
+
+// ========== سجل الإشعارات ==========
+model NotificationLog {
+  id            String   @id @default(cuid())
+  appointmentId String
+  type          String
+  sentAt        DateTime @default(now())
+  channel       String   @default("WHATSAPP")
+}
