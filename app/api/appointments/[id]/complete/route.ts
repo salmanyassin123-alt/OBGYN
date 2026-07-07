@@ -6,7 +6,16 @@ import { notifyUpcomingPatients, refreshEstimatesForDay } from "@/lib/queue";
 // PATCH: الدكتورة تنهي الكشف وتسجل التشخيص/الروشتة
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json();
-  const { diagnosis, prescription, visitType, nextVisitDate, doctorNotes, labResults } = body;
+  const {
+    diagnosis,
+    prescription,
+    visitType,
+    nextVisitDate,
+    doctorNotes,
+    labResults,
+    needsSurgery,
+    surgeryDate,
+  } = body;
 
   const appointment = await prisma.appointment.update({
     where: { id: params.id },
@@ -26,6 +35,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         labResults,
         nextVisitDate: nextVisitDate ? new Date(nextVisitDate) : undefined,
         doctorNotes,
+        needsSurgery: needsSurgery ?? false,
+        surgeryDate: needsSurgery && surgeryDate ? new Date(surgeryDate) : undefined,
       },
     });
   }
