@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getNextQueueNumber, estimateWaitMinutes } from "@/lib/queue";
 
+// الصفحة دي بيانات لحظية بتتغير باستمرار، فمينفعش Next.js يخزنها (cache)
+export const dynamic = "force-dynamic";
+
 // GET: جلب حجوزات يوم معين (للعرض في شاشة الانتظار أو لوحة الريسبشن)
 export async function GET(req: NextRequest) {
   const dateParam = req.nextUrl.searchParams.get("date");
