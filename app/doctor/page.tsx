@@ -95,12 +95,33 @@ export default function DoctorPage() {
   async function fetchAppointments() {
     const today = new Date().toISOString();
     const res = await fetch(`/api/appointments?date=${today}`);
-    setAppointments(await res.json());
+    const data = await res.json();
+    setAppointments(data);
+
+    // لو مفيش حالة نشطة في المتصفح (زي بعد refresh)، لكن فيه حجز متسجل في
+    // قاعدة البيانات لسه "جاري الكشف عليه" (CALLED/IN_PROGRESS)، نرجّع نفس
+    // الحالة دي بدل ما نعرض "جاهز لنداء التالية" بالغلط
+    setActiveId((prev) => {
+      if (prev) return prev;
+      const stillActive = data.find(
+        (a: Appointment) => a.status === "CALLED" || a.status === "IN_PROGRESS"
+      );
+      return stillActive ? stillActive.id : prev;
+    });
   }
 
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  // لما activeId يتغيّر (سواء بنداء يدوي أو باسترجاعه من قاعدة البيانات بعد refresh)
+  // نجيب تفاصيل الملف الطبي المرتبطة بيه
+  useEffect(() => {
+    if (activeId && detail?.id !== activeId) {
+      fetchDetail(activeId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
 
   const waiting = appointments.filter((a) => a.status === "WAITING");
   const current = appointments.find((a) => a.id === activeId);
