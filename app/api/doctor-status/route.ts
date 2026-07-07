@@ -3,6 +3,10 @@ import { prisma } from "@/lib/db";
 import { sendWhatsAppMessage, messageTemplates } from "@/lib/whatsapp";
 import { refreshEstimatesForDay } from "@/lib/queue";
 
+// الصفحة دي بيانات لحظية بتتغير باستمرار، فمينفعش Next.js يخزنها (cache)
+export const dynamic = "force-dynamic";
+
+
 // GET: جلب حالة الدكتور الحالية (تُستخدم في شاشة الانتظار وصفحة الحجز)
 export async function GET() {
   const status = await prisma.doctorStatus.upsert({
