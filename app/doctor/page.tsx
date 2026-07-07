@@ -20,6 +20,8 @@ type Visit = {
   doctorNotes: string | null;
   labResults: string | null;
   nextVisitDate: string | null;
+  needsSurgery: boolean;
+  surgeryDate: string | null;
 };
 
 type PatientDetail = {
@@ -87,6 +89,8 @@ export default function DoctorPage() {
   const [labResults, setLabResults] = useState("");
   const [nextVisitDate, setNextVisitDate] = useState("");
   const [doctorNotes, setDoctorNotes] = useState("");
+  const [needsSurgery, setNeedsSurgery] = useState(false);
+  const [surgeryDate, setSurgeryDate] = useState("");
 
   async function fetchAppointments() {
     const today = new Date().toISOString();
@@ -178,6 +182,8 @@ export default function DoctorPage() {
         labResults: labResults || undefined,
         nextVisitDate: nextVisitDate || undefined,
         doctorNotes: doctorNotes || undefined,
+        needsSurgery,
+        surgeryDate: needsSurgery && surgeryDate ? surgeryDate : undefined,
       }),
     });
     setActiveId(null);
@@ -187,6 +193,8 @@ export default function DoctorPage() {
     setLabResults("");
     setNextVisitDate("");
     setDoctorNotes("");
+    setNeedsSurgery(false);
+    setSurgeryDate("");
     await fetchAppointments();
   }
 
@@ -417,6 +425,13 @@ export default function DoctorPage() {
                       موعد المتابعة القادم: {new Date(lastVisit.nextVisitDate).toLocaleDateString("ar-EG")}
                     </p>
                   )}
+                  {lastVisit.needsSurgery && (
+                    <p className="mt-1 text-xs font-medium text-wine-700">
+                      ⚠️ محتاجة عملية
+                      {lastVisit.surgeryDate &&
+                        ` — بتاريخ ${new Date(lastVisit.surgeryDate).toLocaleDateString("ar-EG")}`}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -468,6 +483,12 @@ export default function DoctorPage() {
                           موعد المتابعة: {new Date(v.nextVisitDate).toLocaleDateString("ar-EG")}
                         </p>
                       )}
+                      {v.needsSurgery && (
+                        <p className="text-xs font-medium text-wine-700">
+                          ⚠️ محتاجة عملية
+                          {v.surgeryDate && ` — بتاريخ ${new Date(v.surgeryDate).toLocaleDateString("ar-EG")}`}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -515,6 +536,30 @@ export default function DoctorPage() {
             onChange={(e) => setNextVisitDate(e.target.value)}
             className="mb-4 w-full rounded-xl border border-rose-400/30 p-2 focus:border-wine-500 focus:outline-none sm:w-60"
           />
+
+          <label className="mb-2 flex items-center gap-2 text-sm text-plum-900/70">
+            <input
+              type="checkbox"
+              checked={needsSurgery}
+              onChange={(e) => {
+                setNeedsSurgery(e.target.checked);
+                if (!e.target.checked) setSurgeryDate("");
+              }}
+              className="h-4 w-4 rounded border-rose-400/40 text-wine-600 focus:ring-wine-500"
+            />
+            المريضة تحتاج عملية
+          </label>
+          {needsSurgery && (
+            <>
+              <label className="mb-1 block text-sm text-plum-900/70">موعد العملية (لو محدد)</label>
+              <input
+                type="date"
+                value={surgeryDate}
+                onChange={(e) => setSurgeryDate(e.target.value)}
+                className="mb-4 w-full rounded-xl border border-rose-400/30 p-2 focus:border-wine-500 focus:outline-none sm:w-60"
+              />
+            </>
+          )}
 
           <button
             onClick={completeVisit}
