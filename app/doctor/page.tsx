@@ -25,6 +25,8 @@ type Visit = {
 type PatientDetail = {
   id: string;
   queueNumber: number;
+  weight: number | null;
+  bloodPressure: string | null;
   patient: { name: string; phone: string };
   isFirstVisit: boolean;
   profile: {
@@ -241,6 +243,23 @@ export default function DoctorPage() {
           <h2 className="mb-4 font-display text-lg font-semibold text-wine-700">
             جاري كشف: {current.patient.name} (دور رقم {current.queueNumber})
           </h2>
+
+          {detail && (detail.weight != null || detail.bloodPressure) && (
+            <div className="mb-4 flex flex-wrap gap-3">
+              {detail.weight != null && (
+                <div className="rounded-xl border border-rose-400/20 bg-blush-50 px-4 py-2 text-sm">
+                  <span className="text-plum-900/60">الوزن: </span>
+                  <span className="font-semibold text-wine-700">{detail.weight} كجم</span>
+                </div>
+              )}
+              {detail.bloodPressure && (
+                <div className="rounded-xl border border-rose-400/20 bg-blush-50 px-4 py-2 text-sm" dir="ltr">
+                  <span className="text-plum-900/60" dir="rtl">ضغط الدم: </span>
+                  <span className="font-semibold text-wine-700">{detail.bloodPressure}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {detailLoading && <p className="mb-4 text-sm text-plum-900/50">جاري تحميل بيانات الحالة...</p>}
 
