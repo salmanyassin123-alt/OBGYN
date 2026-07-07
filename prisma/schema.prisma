@@ -167,6 +167,12 @@ enum DoctorStatusType {
   EMERGENCY
 }
 
+// ========== عداد رقم الدور اليومي (لمنع تصادم رقمين لمريضتين حجزوا في نفس اللحظة) ==========
+model DailyQueueCounter {
+  date       String @id // بصيغة YYYY-MM-DD
+  lastNumber Int    @default(0)
+}
+
 // ========== سجل الإشعارات ==========
 model NotificationLog {
   id            String   @id @default(cuid())
