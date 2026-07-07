@@ -12,6 +12,8 @@ type Visit = {
   doctorNotes: string | null;
   nextVisitDate: string | null;
   labResults: string | null;
+  needsSurgery: boolean;
+  surgeryDate: string | null;
 };
 
 type ProfileData = {
@@ -199,6 +201,12 @@ export default function ProfilePage() {
                       {v.nextVisitDate && (
                         <p className="mt-1 text-xs text-wine-500">
                           موعد المتابعة القادم: {new Date(v.nextVisitDate).toLocaleDateString("ar-EG")}
+                        </p>
+                      )}
+                      {v.needsSurgery && (
+                        <p className="mt-1 text-xs font-medium text-wine-700">
+                          ⚠️ محتاجة عملية
+                          {v.surgeryDate && ` — بتاريخ ${new Date(v.surgeryDate).toLocaleDateString("ar-EG")}`}
                         </p>
                       )}
                     </div>
