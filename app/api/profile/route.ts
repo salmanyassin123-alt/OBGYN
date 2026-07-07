@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+// الصفحة دي بيانات لحظية بتتغير باستمرار، فمينفعش Next.js يخزنها (cache)
+export const dynamic = "force-dynamic";
+
 // GET: جلب الملف الطبي + سجل الزيارات بواسطة رقم الهاتف
 export async function GET(req: NextRequest) {
   const phone = req.nextUrl.searchParams.get("phone")?.replace(/\s|-/g, "");
