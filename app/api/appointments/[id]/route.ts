@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+// الصفحة دي بيانات لحظية بتتغير باستمرار، فمينفعش Next.js يخزنها (cache)
+export const dynamic = "force-dynamic";
+
 // GET: تفاصيل الحجز كاملة للدكتور - بيانات المريضة + تاريخها المرضي
 // (تُستخدم في لوحة الدكتور وقت نداء الحالة عشان تظهر المتابعة أو فورم أول زيارة)
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -29,6 +32,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({
     id: appointment.id,
     queueNumber: appointment.queueNumber,
+    weight: appointment.weight,
+    bloodPressure: appointment.bloodPressure,
     patient: { name: appointment.patient.name, phone: appointment.patient.phone },
     isFirstVisit,
     profile: profile
