@@ -67,6 +67,8 @@ model Visit {
   labResults      String?
   nextVisitDate   DateTime?
   doctorNotes     String?
+  needsSurgery    Boolean      @default(false)
+  surgeryDate     DateTime?
   createdAt       DateTime     @default(now())
 }
 
