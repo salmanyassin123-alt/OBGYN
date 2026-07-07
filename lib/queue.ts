@@ -55,20 +55,21 @@ export async function estimateWaitMinutes(appointmentId: string): Promise<number
   return Math.round(peopleAhead * avgTime + extraDelay);
 }
 
-/** توليد رقم الدور التالي لليوم المحدد (يشمل أونلاين + ووك-إن في نفس التسلسل) */
+/**
+ * توليد رقم الدور التالي لليوم المحدد (يشمل أونلاين + ووك-إن في نفس التسلسل)
+ * بيستخدم عداد ذري (atomic increment) على مستوى قاعدة البيانات عشان لو حجزين
+ * جم في نفس اللحظة بالظبط، كل واحد ياخد رقم مختلف ومفيش تصادم.
+ */
 export async function getNextQueueNumber(scheduledDate: Date): Promise<number> {
-  const startOfDay = new Date(scheduledDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(scheduledDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  const dateKey = scheduledDate.toISOString().slice(0, 10); // YYYY-MM-DD
 
-  const last = await prisma.appointment.findFirst({
-    where: { scheduledDate: { gte: startOfDay, lte: endOfDay } },
-    orderBy: { queueNumber: "desc" },
-    select: { queueNumber: true },
+  const counter = await prisma.dailyQueueCounter.upsert({
+    where: { date: dateKey },
+    update: { lastNumber: { increment: 1 } },
+    create: { date: dateKey, lastNumber: 1 },
   });
 
-  return (last?.queueNumber ?? 0) + 1;
+  return counter.lastNumber;
 }
 
 /**
